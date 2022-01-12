@@ -50,6 +50,24 @@ class SettingsReader:
             json.dump(settings, outfile)
 
     @staticmethod
+    def modify_clock_settings(short_break, work_interval, task_counter):
+        """
+        Modify the clock settings with new values
+        """
+
+        # Read the current state of the json file
+        json_content = SettingsReader.read_settings()
+
+        # Modify the required settings
+        json_content['clock']['short_break'] = short_break
+        json_content['clock']['work_interval'] = work_interval
+        json_content['clock']['tasks_counter'] = task_counter
+
+        # Write the new content to json file
+        with open(SettingsReader.settings_file_path, "w") as outfile:
+            json.dump(json_content, outfile)
+
+    @staticmethod
     def read_settings():
         """
         Read the settings from json file
