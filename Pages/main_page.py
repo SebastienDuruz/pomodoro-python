@@ -2,7 +2,8 @@
 # Author : Sébastien Duruz
 # Date : 10.01.2021
 # Description : The main page of the application
-
+import time
+import threading
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
@@ -20,8 +21,12 @@ class MainPage:
     # Timer relative information
     timer_is_running = False
     timer_is_pause = False
-    remaining_time_str = None
     remaining_time_seconds = None
+    counter_minutes_str = json_settings['clock']['work_interval']
+    counter_seconds_str = "00"
+
+    # The thread for clock timer related process (let us pause / stop timer any time)
+    timer_thread = None
 
     # Objects required by different methods
     window = None
@@ -66,7 +71,7 @@ class MainPage:
                                                                             text=MainPage.json_settings
                                                                             ['clock']['work_interval'] + ":00")
         MainPage.alarm_clock_canvas.pack()
-        alarm_clock_start_button = Button(alarm_clock_frame, text="Start", width=20)
+        alarm_clock_start_button = Button(alarm_clock_frame, text="Start", width=20, command=MainPage.start_timer)
         alarm_clock_stop_button = Button(alarm_clock_frame, text="Stop", width=20)
         alarm_clock_start_button.pack(side=LEFT)
         alarm_clock_stop_button.pack(side=RIGHT)
@@ -135,28 +140,70 @@ class MainPage:
                                                "\n(Only positive numbers allowed)")
 
     @staticmethod
-    def calculate_remaining_timer():
-        """
-        Calculate the remaining time of the started timer
-        """
-
-        pass
-
-    @staticmethod
     def start_timer():
-        pass
+        """
+        Start a new timer with given settings
+        """
+        if not MainPage.timer_is_running:
+
+            # Notify the program that timer is currently running
+            MainPage.timer_is_running = True
+
+            # Calculate the full time in second of the current
+            MainPage.remaining_time_seconds = int(MainPage.json_settings['clock']['work_interval']) * 60
+
+            # Start the thread
+            MainPage.timer_thread = threading.Timer(1.0, MainPage.update_timer)
+            MainPage.timer_thread.start()
 
     @staticmethod
     def update_timer():
-        pass
+        """
+        Update the timer with new values
+        """
+
+        # Timer is running
+        while MainPage.remaining_time_seconds > -1:
+            if MainPage.timer_is_running:
+
+                # Split the seconds to mins and secs
+                mins, secs = divmod(MainPage.remaining_time_seconds, 60)
+
+                # remove 1 sec to total
+                MainPage.remaining_time_seconds -= 1
+
+                # Update the output text value
+                MainPage.alarm_clock_canvas.itemconfigure(MainPage.alarm_clock_text,
+                                                          text='{:02d}:{:02d}'.format(
+                                                              int(mins),
+                                                              int(secs)))
+
+                time.sleep(1)
+
+        # Triggered at the end of execution
+        MainPage.end_timer()
+
+    @staticmethod
+    def end_timer():
+        """
+        The timer ended, clear the required values
+        """
+
+        MainPage.timer_is_running = False
+        MainPage.timer_thread = None
 
     @staticmethod
     def get_settings():
         """
-        Get the settings from json settings file
+        Get the settings from json settings file and update the current minutes string
         """
 
+        # Update the settings fetched from json file
         MainPage.json_settings = SettingsReader().read_settings()
+
+        # Update the required values
+        MainPage.counter_minutes_str = MainPage.json_settings['clock']['work_interval']
+        MainPage.counter_seconds_str = 0
 
     @staticmethod
     def update_page_info():
@@ -168,7 +215,9 @@ class MainPage:
         if str(MainPage.app_notebook.index(MainPage.app_notebook.select())) == "0":
             if not MainPage.timer_is_running and not MainPage.timer_is_pause:
                 MainPage.alarm_clock_canvas.itemconfigure(MainPage.alarm_clock_text,
-                                                          text=MainPage.json_settings['clock']['work_interval'] + ":00")
+                                                          text='{:02d}:{:02d}'.format(
+                                                                int(MainPage.counter_minutes_str),
+                                                                int(MainPage.counter_seconds_str)))
 
     @staticmethod
     def on_notebook_page_changed(event):
@@ -181,5 +230,3 @@ class MainPage:
 
         # Update the specific page information
         MainPage.update_page_info()
-
-
