@@ -1,4 +1,3 @@
-# ETML
 # Author : Sébastien Duruz
 # Date : 12.01.2021
 # Description : Model to access (Read and Write) to json settings file
