@@ -70,7 +70,7 @@ class MainPage:
 
         # alarm clock notebook page
         alarm_clock_frame = Frame(MainPage.app_notebook, padx=25, pady=25)
-        alarm_clock_frame.grid()
+        alarm_clock_frame.pack()
         MainPage.alarm_clock_tasks_counter_label = Label(alarm_clock_frame, text="Current session : 1 / " +
                                                                                  str(MainPage.tasks_counter))
         MainPage.alarm_clock_tasks_counter_label.pack(side=TOP)
@@ -92,18 +92,18 @@ class MainPage:
         MainPage.alarm_clock_pause_button['state'] = "disabled"
 
         # alarm value notebook page
-        alarm_values_frame = Frame(MainPage.app_notebook)
-        alarm_values_frame.grid()
+        alarm_values_frame = Frame(MainPage.app_notebook, pady=25, padx=25)
+        alarm_values_frame.pack()
 
         # build the required elements
-        short_break_label = Label(alarm_values_frame, text="Short Break")
-        work_interval_label = Label(alarm_values_frame, text="Work interval")
-        tasks_counter_label = Label(alarm_values_frame, text="Tasks")
-        MainPage.short_break_entry = Entry(alarm_values_frame, justify="center")
-        MainPage.work_interval_entry = Entry(alarm_values_frame, justify="center")
-        MainPage.tasks_counter_entry = Entry(alarm_values_frame, justify="center")
+        short_break_label = Label(alarm_values_frame, text="Short Break", pady=10)
+        work_interval_label = Label(alarm_values_frame, text="Work interval", pady=10)
+        tasks_counter_label = Label(alarm_values_frame, text="Tasks", pady=10)
+        MainPage.short_break_entry = Entry(alarm_values_frame, justify="center", width=10)
+        MainPage.work_interval_entry = Entry(alarm_values_frame, justify="center", width=10)
+        MainPage.tasks_counter_entry = Entry(alarm_values_frame, justify="center", width=10)
         update_values_button = Button(
-            alarm_values_frame, text="Update", command=MainPage.validate_form_values
+            alarm_values_frame, text="Update", command=MainPage.validate_form_values, width=20
         )
 
         # Update the values with current settings
