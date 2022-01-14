@@ -29,6 +29,7 @@ class MainPage:
         # Timer relative information
         self.__timer_is_running = False
         self.__timer_is_pause = False
+        self.__total_time_seconds_task = None
         self.__remaining_time_seconds = None
         self.__break_counter = int(self.json_settings['clock']['short_break'])
         self.__counter_minutes_str = self.json_settings['clock']['work_interval']
@@ -49,7 +50,7 @@ class MainPage:
         self.__alarm_clock_tasks_counter_label = None
         self.__alarm_clock_current_task_text = None
         self.__alarm_clock_canvas = None
-        self.__alarm_clock_circle = None
+        self.__alarm_clock_arc = None
         self.__alarm_clock_text = None
         self.__alarm_clock_start_button = None
         self.__alarm_clock_pause_button = None
@@ -83,7 +84,8 @@ class MainPage:
         self.__alarm_clock_current_task_text = self.__alarm_clock_canvas.create_text(150, 35,
                                                                                      font=('Arial', 24, 'bold'),
                                                                                      text="")
-        self.__alarm_clock_circle = self.__alarm_clock_canvas.create_oval(50, 70, 250, 270, width=3)
+        self.__alarm_clock_arc = self.__alarm_clock_canvas.create_arc(50, 70, 250, 270, start=90, extent=359.99,
+                                                                      style=ARC, width=2, outline="black")
         self.__alarm_clock_text = self.__alarm_clock_canvas.create_text(150, 170, font=('Arial', 36, 'bold'),
                                                                         text=self.json_settings['clock']
                                                                         ['work_interval'] + ":00")
@@ -207,8 +209,11 @@ class MainPage:
                     # Calculate the full time in second of the current running timer
                     self.__remaining_time_seconds = int(self.json_settings['clock']['work_interval']) * 60
 
+                    # Store it for animation calculation
+                    self.__total_time_seconds_task = self.__remaining_time_seconds
+
                     # Modify the elements with correct colors
-                    self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_circle, outline="red")
+                    self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_arc, outline="red")
                     self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_current_task_text, text="WORK")
 
                 # Break period
@@ -220,8 +225,11 @@ class MainPage:
                         # Calculate the full time in second of the current running timer
                         self.__remaining_time_seconds = int(self.json_settings['clock']['short_break']) * 60
 
+                        # Store it for animation calculation
+                        self.__total_time_seconds_task = self.__remaining_time_seconds
+
                         # Modify the elements with correct colors
-                        self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_circle, outline="green")
+                        self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_arc, outline="green")
                         self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_current_task_text, text="BREAK")
 
                 # Remains time to timer
@@ -233,14 +241,16 @@ class MainPage:
                         # Split the seconds to mins and secs
                         mins, secs = divmod(self.__remaining_time_seconds, 60)
 
-                        # remove 1 sec to total
-                        self.__remaining_time_seconds -= 1
+                        self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_arc, extent=self.__calculate_step())
 
                         # Update the output text value
                         self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_text,
                                                                 text='{:02d}:{:02d}'.format(
                                                                       int(mins),
                                                                       int(secs)))
+
+                        # remove 1 sec to total
+                        self.__remaining_time_seconds -= 1
 
                     # The timer as been stopped : finish the execution of the thread
                     elif not self.__timer_is_running and not self.__timer_is_pause:
@@ -266,16 +276,16 @@ class MainPage:
         # Pause the timer
         if not self.__timer_is_pause:
 
-            self.__last_clock_state_color = self.__alarm_clock_canvas.itemcget(self.__alarm_clock_circle, 'outline')
+            self.__last_clock_state_color = self.__alarm_clock_canvas.itemcget(self.__alarm_clock_arc, 'outline')
             self.__alarm_clock_pause_button.config(text="Resume")
-            self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_circle, outline="orange")
+            self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_arc, outline="orange")
             self.__timer_is_pause = True
             self.__timer_is_running = False
 
         # Resume the timer
         else:
 
-            self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_circle, outline=self.__last_clock_state_color)
+            self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_arc, outline=self.__last_clock_state_color)
             self.__alarm_clock_pause_button.config(text="Pause")
             self.__timer_is_pause = False
             self.__timer_is_running = True
@@ -296,6 +306,21 @@ class MainPage:
         self.__get_settings()
         self.__update_page_info()
         self.__reset_page_graphics()
+
+    def __calculate_step(self):
+        """
+        Calculate the step to apply to the arc animation
+        :return: The calculated step (int)
+        """
+
+        # remaining_sec * 360 / total_sec == Angle to apply
+        result = float(self.__remaining_time_seconds * 360 / self.__total_time_seconds_task)
+
+        # Return the required value (359.99 if timer as not been started, prevent the ring to be hide)
+        if result < 360:
+            return result
+        return 359.99
+
 
     def __get_settings(self):
         """
@@ -333,7 +358,8 @@ class MainPage:
         Reset the default graphics of the timer
         """
 
-        self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_circle, outline="black")
+        self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_arc, outline="black")
+        self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_arc, extent=359.99)
         self.__alarm_clock_canvas.itemconfigure(self.__alarm_clock_current_task_text, text="")
         self.__alarm_clock_start_button.config(text="Start")
         self.__alarm_clock_pause_button['state'] = "disabled"
