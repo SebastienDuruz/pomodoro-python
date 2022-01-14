@@ -8,31 +8,29 @@ import os
 
 class SettingsReader:
 
-    # The file path of the json file that contains settings
-    settings_file_path = "settings.json"
-
     def __init__(self):
         """
         Class Constructor
         """
 
-        # Create the settings file if not already exists
-        if not SettingsReader.settings_file_exists():
-            SettingsReader.write_new_settings_file()
+        # The file path of the json file that contains settings
+        self.settings_file_path = "settings.json"
 
-    @staticmethod
-    def settings_file_exists():
+        # Create the settings file if not already exists
+        if not SettingsReader.settings_file_exists(self):
+            SettingsReader.write_new_settings_file(self)
+
+    def settings_file_exists(self):
         """
         Check if the settings file exists
         :return: True if exists, false if not
         """
 
-        if os.path.isfile(SettingsReader.settings_file_path):
+        if os.path.isfile(self.settings_file_path):
             return True
         return False
 
-    @staticmethod
-    def write_new_settings_file():
+    def write_new_settings_file(self):
         """
         Write a new settings file with default values
         """
@@ -45,17 +43,16 @@ class SettingsReader:
         }}
 
         # Write the settings to the json file
-        with open(SettingsReader.settings_file_path, 'w') as outfile:
+        with open(self.settings_file_path, 'w') as outfile:
             json.dump(settings, outfile)
 
-    @staticmethod
-    def modify_clock_settings(short_break, work_interval, task_counter):
+    def modify_clock_settings(self, short_break, work_interval, task_counter):
         """
         Modify the clock settings with new values
         """
 
         # Read the current state of the json file
-        json_content = SettingsReader.read_settings()
+        json_content = SettingsReader.read_settings(self)
 
         # Modify the required settings
         json_content['clock']['short_break'] = short_break
@@ -63,21 +60,19 @@ class SettingsReader:
         json_content['clock']['tasks_counter'] = task_counter
 
         # Write the new content to json file
-        with open(SettingsReader.settings_file_path, "w") as outfile:
+        with open(self.settings_file_path, "w") as outfile:
             json.dump(json_content, outfile)
 
-    @staticmethod
-    def read_settings():
+    def read_settings(self):
         """
         Read the settings from json file
         :return: The content of the json file
         """
 
         # If the file does not already exist, create it
-        if not SettingsReader.settings_file_exists():
-            SettingsReader.write_new_settings_file()
+        if not SettingsReader.settings_file_exists(self):
+            SettingsReader.write_new_settings_file(self)
 
         # Return the content of the file
-        with open(SettingsReader.settings_file_path) as json_file:
+        with open(self.settings_file_path) as json_file:
             return json.load(json_file)
-

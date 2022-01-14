@@ -1,6 +1,6 @@
 # Author : Sébastien Duruz
 # Date : 13.01.2021
-# Description : Play an audio file defined at object instanciation
+# Description : Play an audio file defined at object instantiation
 
 import threading
 import playsound
@@ -16,20 +16,20 @@ class AudioPlayer:
         Class Constructor
         """
 
-        self.audio_file_path = file
+        self.__audio_file_path = file
 
     def play_audio(self):
         """
         Play the audio file with playsound library
         """
 
-        def thread_audio():
+        def __thread_audio():
             """
             Called by the thread
             """
 
-            playsound.playsound(self.audio_file_path)
+            playsound.playsound(self.__audio_file_path)
 
         # Play sound on a new thread
-        threading.Thread(target=thread_audio).start()
+        threading.Thread(target=__thread_audio).start()
 
