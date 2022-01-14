@@ -40,6 +40,7 @@ class MainPage:
         # File paths
         self.__application_dir_path = os.path.dirname(os.path.realpath(__file__))
         self.__work_sound_path = os.path.join(self.__application_dir_path + '/../Resources/work_sound.wav')
+        self.__break_sound_path = os.path.join(self.__application_dir_path + '/../Resources/break_sound.wav')
 
         # The thread for clock timer related process (let us pause / stop timer any time)
         self.__timer_thread = None
@@ -102,11 +103,11 @@ class MainPage:
         alarm_values_frame.pack()
 
         # build the required elements
+        work_interval_label = Label(alarm_values_frame, text="Pomodoro", pady=10)
         short_break_label = Label(alarm_values_frame, text="Short Break", pady=10)
-        work_interval_label = Label(alarm_values_frame, text="Work interval", pady=10)
         tasks_counter_label = Label(alarm_values_frame, text="Tasks", pady=10)
-        self.__short_break_entry = Entry(alarm_values_frame, justify="center", width=10)
         self.__work_interval_entry = Entry(alarm_values_frame, justify="center", width=10)
+        self.__short_break_entry = Entry(alarm_values_frame, justify="center", width=10)
         self.__tasks_counter_entry = Entry(alarm_values_frame, justify="center", width=10)
         update_values_button = Button(
             alarm_values_frame, text="Update", command=self.__validate_form_values, width=20
@@ -118,10 +119,10 @@ class MainPage:
         self.__tasks_counter_entry.insert(0, self.json_settings['clock']['tasks_counter'])
 
         # pack the elements
-        short_break_label.pack()
-        self.__short_break_entry.pack()
         work_interval_label.pack()
         self.__work_interval_entry.pack()
+        short_break_label.pack()
+        self.__short_break_entry.pack()
         tasks_counter_label.pack()
         self.__tasks_counter_entry.pack()
         update_values_button.pack(side=BOTTOM)
@@ -179,8 +180,6 @@ class MainPage:
             self.__timer_thread.daemon = True
             self.__timer_thread.start()
 
-            AudioPlayer(self.__work_sound_path).play_audio()
-
         # Stop a running timer
         else:
 
@@ -201,6 +200,8 @@ class MainPage:
                 # Work period
                 if i == 0:
 
+                    AudioPlayer(self.__work_sound_path).play_audio()
+
                     self.__alarm_clock_tasks_counter_label.config(text="Current session : " +
                                                                        str(int(self.__tasks_counter) + 1 -
                                                                            int(self.__current_tasks_counter)) +
@@ -218,6 +219,8 @@ class MainPage:
 
                 # Break period
                 elif i == 1:
+
+                    AudioPlayer(self.__break_sound_path).play_audio()
 
                     # Don't trigger when last tasks running (no break needed)
                     if self.__current_tasks_counter != 1:
