@@ -38,9 +38,9 @@ class MainPage:
         self.__last_clock_state_color = 'black'
 
         # File paths
-        self.__application_dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.__work_sound_path = os.path.join(self.__application_dir_path + '/../Resources/work_sound.wav')
-        self.__break_sound_path = os.path.join(self.__application_dir_path + '/../Resources/break_sound.wav')
+        self.__work_sound_path = os.path.join(os.getcwd(), 'Resources/work_sound.wav')
+        self.__break_sound_path = os.path.join(os.getcwd(), 'Resources/break_sound.wav')
+        self.__app_logo_path = os.path.join(os.getcwd(), 'Resources/logo.png')
 
         # The thread for clock timer related process (let us pause / stop timer any time)
         self.__timer_thread = None
@@ -70,6 +70,7 @@ class MainPage:
         self.__window = Tk()
         self.__window.title("Pomodoro Timer")
         self.__window.resizable(False, False)
+        self.__window.call('wm', 'iconphoto', self.__window, PhotoImage(file=self.__app_logo_path))
         self.__window.protocol("WM_DELETE_WINDOW", lambda: self.__on_closing())
         self.__app_notebook = ttk.Notebook(self.__window)
         self.__app_notebook.pack()
