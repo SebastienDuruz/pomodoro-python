@@ -6,11 +6,14 @@ import os.path
 import sys
 import time
 import threading
+import socket
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from Models.settings_reader import SettingsReader
 from Models.audio_player import AudioPlayer
+from Sockets.server import Server
+from Sockets.client import Client
 
 
 class MainPage:
@@ -45,8 +48,11 @@ class MainPage:
         # The thread for clock timer related process (let us pause / stop timer any time)
         self.__timer_thread = None
 
+        # The thread for handle the server
+        self.__server_thread = None
+
         # Objects required by different methods
-        self.__window = None
+        self.__window = Tk()
         self.__app_notebook = None
         self.__alarm_clock_tasks_counter_label = None
         self.__alarm_clock_current_task_text = None
@@ -59,6 +65,17 @@ class MainPage:
         self.__work_interval_entry = None
         self.__tasks_counter_entry = None
 
+        # Host (socket, client server) relative information
+        self.__host_mode = IntVar()
+        self.__server_ip_label = None
+        self.__host_actions_frame = None
+        self.__client_actions_frame = None
+        self.__host_log_text = None
+        self.__client_log_text = None
+        self.__local_ip = socket.gethostbyname(socket.gethostname())
+        self.__server_instance = None
+        self.__client_instance = None
+
         self.__build_pages()
 
     def __build_pages(self):
@@ -67,7 +84,6 @@ class MainPage:
         """
 
         # Main Window
-        self.__window = Tk()
         self.__window.title("Pomodoro Timer")
         self.__window.resizable(False, False)
         self.__window.call('wm', 'iconphoto', self.__window, PhotoImage(file=self.__app_logo_path))
@@ -133,14 +149,48 @@ class MainPage:
         update_values_button.pack(side=BOTTOM)
 
         # External access page
+        self.alarm_external_page = Frame(self.__app_notebook, pady=25, padx=25)
+        Label(self.alarm_external_page, text="Setup a host or connect to a server:").pack()
+        self.__client_radiobutton = Radiobutton(self.alarm_external_page, text="Client", value=1,
+                                                variable=self.__host_mode,
+                                                command=lambda: self.__switch_connection_frame())
+        self.__server_radiobutton = Radiobutton(self.alarm_external_page, text="Server", value=2,
+                                                variable=self.__host_mode,
+                                                command=lambda: self.__switch_connection_frame())
+        self.__client_radiobutton.pack()
+        self.__server_radiobutton.pack()
 
-        alarm_external_page = Frame(self.__app_notebook, pady=25, padx=25)
-        alarm_external_page.pack()
+        # Client actions frame
+        self.__client_actions_frame = Frame(self.alarm_external_page)
+        self.__server_ip_label = Label(self.__client_actions_frame, text="Connect to host (ip address)")
+        self.__server_ip_entry = Entry(self.__client_actions_frame, width=48)
+        self.__server_ip_entry.insert(0, self.__local_ip)
+        actions_buttons_frame = Frame(self.__client_actions_frame)
+        self.__connect_host_button = Button(actions_buttons_frame, text="Connect", width=20,
+                                            command=lambda: self.__connect_client())
+        self.__disconnect_host_button = Button(actions_buttons_frame, text="Disconnect", width=20,
+                                               command=lambda: self.__disconnect_client(), state=DISABLED)
+
+        # Host actions frame
+        self.__host_actions_frame = Frame(self.alarm_external_page)
+        self.__start_server_action_button = Button(self.__host_actions_frame, text="Start", width=20,
+                                                   command=lambda: self.__start_server())
+        self.__stop_server_action_button = Button(self.__host_actions_frame, text="Stop", width=20,
+                                                  command=lambda: self.__stop_server(), state=DISABLED)
+
+        # Pack the elements of Clients frame
+        self.__server_ip_label.pack()
+        self.__server_ip_entry.pack()
+        self.__connect_host_button.pack(side=LEFT)
+        self.__disconnect_host_button.pack(side=RIGHT)
+        actions_buttons_frame.pack(side=BOTTOM)
+        self.__start_server_action_button.pack(side=LEFT)
+        self.__stop_server_action_button.pack(side=RIGHT)
 
         # Add the notebook pages to the application
         self.__app_notebook.add(alarm_clock_frame, text="Clock")
         self.__app_notebook.add(alarm_values_frame, text="Settings")
-        self.__app_notebook.add(alarm_external_page, text="Host")
+        self.__app_notebook.add(self.alarm_external_page, text="Host")
 
         # Main loop
         self.__window.mainloop()
@@ -170,6 +220,82 @@ class MainPage:
             # Display error message to user
             messagebox.showerror("Validation", "An error occurred, please check your entries !"
                                                "\n(Only positive numbers allowed)")
+
+    def __switch_connection_frame(self):
+        """
+        Switch the frame to show in correlation with selected mode (client or server)
+        """
+
+        # Client
+        if self.__host_mode.get() == 1:
+            self.__host_actions_frame.pack_forget()
+            self.__client_actions_frame.pack()
+
+        # Server
+        elif self.__host_mode.get() == 2:
+            self.__client_actions_frame.pack_forget()
+            self.__host_actions_frame.pack()
+
+    def __start_server(self):
+        """
+        Start the server on a new thread
+        """
+
+        self.__server = Server()
+        self.__server_thread = threading.Thread(target=self.__server.start)
+        self.__server_thread.daemon = True
+        self.__server_thread.start()
+
+        self.__client_radiobutton.config(state=DISABLED)
+        self.__server_radiobutton.config(state=DISABLED)
+        self.__stop_server_action_button.config(state=NORMAL)
+        self.__start_server_action_button.config(state=DISABLED)
+
+    def __stop_server(self):
+        """
+        Notify the server to stop the process
+        """
+
+        self.__server.is_running = False
+        self.__client_radiobutton.config(state=NORMAL)
+        self.__server_radiobutton.config(state=NORMAL)
+        self.__stop_server_action_button.config(state=DISABLED)
+        self.__start_server_action_button.config(state=NORMAL)
+
+    def __connect_client(self):
+        """
+        Connect the client to desired server
+        """
+
+        self.__client_instance = Client()
+
+        # Success connection
+        if Client.is_connected:
+
+            self.__connect_host_button.config(state=DISABLED)
+            self.__disconnect_host_button.config(state=NORMAL)
+            self.__client_radiobutton.config(state=DISABLED)
+            self.__server_radiobutton.config(state=DISABLED)
+
+        else:
+
+            messagebox.showerror('Connection to host', 'Cannot connect to host, an error occurred !')
+
+    def __disconnect_client(self):
+        """
+        Disconnect the client from the server
+        """
+
+        # Notify the server that client disconnect
+        self.__client_instance.send(self.__client_instance.DISCONNECT_MESSAGE)
+
+        # Switch the actions values
+        self.__connect_host_button.config(state=NORMAL)
+        self.__disconnect_host_button.config(state=DISABLED)
+        self.__client_radiobutton.config(state=NORMAL)
+        self.__server_radiobutton.config(state=NORMAL)
+
+        messagebox.showinfo('Connection to host', 'Disconnected from server !')
 
     def __start_timer(self):
         """
@@ -393,6 +519,11 @@ class MainPage:
         Occurred when the window is closed, ask confirmation to user
         """
 
+        # Disconnect the client if connected
+        if self.__client_instance and self.__client_instance.is_connected:
+            self.__client_instance.send(self.__client_instance.DISCONNECT_MESSAGE)
+
+        # Check for running timer
         if self.__timer_is_running or self.__timer_is_pause:
             if messagebox.askokcancel("Quit", "Do you really want to quit ?\nClock is running !"):
                 sys.exit()

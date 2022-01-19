@@ -2,7 +2,7 @@
 # Date : 19.01.2021
 # Description : The server side socket code.
 
-from socket_object import SocketObject
+from Sockets.socket_object import SocketObject
 import socket
 import threading
 
@@ -12,13 +12,20 @@ class Server(SocketObject):
     Class Server, inherit socket
     """
 
+    is_running = False
+
     def __init__(self):
         """
         Class Constructor
         """
 
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind(self.ADDR)
+        # build the parent
+        super().__init__()
+
+        # Prepare the server
+        self.host = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.host.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.host.bind(self.ADDR)
 
     def start(self):
         """
@@ -27,16 +34,26 @@ class Server(SocketObject):
 
         # Try to start server, stop execution if failed
         try:
-            self.server.listen()
+            self.host.listen()
             print(f"[LISTENING] Server is listening on {self.SERVER}")
+            Server.is_running = True
         except ValueError:
-            print(f"An error occurred, the server can't be start !")
+            print(f"[ERROR] An error occurred, the server can't be start !")
+            Server.is_running = False
             return
 
         # Server is connected
         while True:
-            conn, addr = self.server.accept()
+
+            # Stop thread execution if needed
+            if not Server.is_running:
+                print(f"[SERVER STOP] Server is stopping on {self.SERVER}")
+                return
+
+            # Wait for a client to connect
+            conn, addr = self.host.accept()
             thread = threading.Thread(target=self.handle_client, args=(conn, addr))
+            thread.daemon = True
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
@@ -49,7 +66,7 @@ class Server(SocketObject):
 
         connected = True
 
-        while connected:
+        while connected and Server.is_running:
 
             # Get the length of the message
             msg_length = conn.recv(self.HEADER).decode(self.FORMAT)
@@ -70,4 +87,5 @@ class Server(SocketObject):
                     conn.send("12:15".encode(self.FORMAT))
 
         conn.close()
+
 

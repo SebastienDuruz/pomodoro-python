@@ -2,7 +2,7 @@
 # Date : 19.01.2021
 # Description : The client side socket code.
 
-from socket_object import SocketObject
+from Sockets.socket_object import SocketObject
 import socket
 
 
@@ -11,13 +11,22 @@ class Client(SocketObject):
     Class Client, inherit socket
     """
 
+    is_connected = False
+
     def __init__(self):
 
-        # Set up the client
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.connect(self.ADDR)
+        # Init the parent object
+        super().__init__()
 
-        self.send("Hello, I'm a client")
+        Client.is_connected = True
+
+        # Set up the client
+        # TODO: Set up the given IP as server IP
+        try:
+            self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client.connect(self.ADDR)
+        except ValueError:
+            Client.is_connected = False
 
     def send(self, msg):
         """
@@ -26,11 +35,17 @@ class Client(SocketObject):
             1) send a default length message to communicate the length of the message to server
             2) the actual message to send
         """
+        try:
 
-        message = msg.encode(self.FORMAT)
-        msg_length = len(message)
-        send_length = str(msg_length).encode(self.FORMAT)
-        send_length += b' ' * (self.HEADER - len(send_length))
-        self.client.send(send_length)
-        self.client.send(message)
-        print(self.client.recv(2048).decode(self.FORMAT))
+            message = msg.encode(self.FORMAT)
+            msg_length = len(message)
+            send_length = str(msg_length).encode(self.FORMAT)
+            send_length += b' ' * (self.HEADER - len(send_length))
+            self.client.send(send_length)
+            self.client.send(message)
+            print(self.client.recv(2048).decode(self.FORMAT))
+
+        except ValueError:
+            pass
+
+            # TODO: Notify user about send failed
