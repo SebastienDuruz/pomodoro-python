@@ -76,6 +76,10 @@ class MainPage:
         self.__app_notebook.pack()
         self.__app_notebook.bind("<<NotebookTabChanged>>", self.__on_notebook_page_changed)
 
+        # External access status message
+        # TODO: Pack the label
+        external_access_status = Label(text="")
+
         # alarm clock notebook page
         alarm_clock_frame = Frame(self.__app_notebook, padx=25, pady=25)
         alarm_clock_frame.pack()
@@ -128,9 +132,15 @@ class MainPage:
         self.__tasks_counter_entry.pack()
         update_values_button.pack(side=BOTTOM)
 
+        # External access page
+
+        alarm_external_page = Frame(self.__app_notebook, pady=25, padx=25)
+        alarm_external_page.pack()
+
         # Add the notebook pages to the application
         self.__app_notebook.add(alarm_clock_frame, text="Clock")
         self.__app_notebook.add(alarm_values_frame, text="Settings")
+        self.__app_notebook.add(alarm_external_page, text="Host")
 
         # Main loop
         self.__window.mainloop()
@@ -324,7 +334,6 @@ class MainPage:
         if result < 360:
             return result
         return 359.99
-
 
     def __get_settings(self):
         """
