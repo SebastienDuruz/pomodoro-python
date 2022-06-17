@@ -1,4 +1,3 @@
-# ETML
 # Author : Sébastien Duruz
 # Date : 10.01.2021
 
